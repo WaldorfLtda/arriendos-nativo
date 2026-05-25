@@ -1,10 +1,20 @@
 import { useState, useEffect } from "react";
 
 // ── Supabase config ──────────────────────────────────────────
-const SUPA_URL = "https://dscзjxscglezsdmcbuho.supabase.co";
+const SUPA_URL = "https://dsczjxscglezsdmcbuho.supabase.co";
 const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRzY3pqeHNjZ2xlenNkbWNidWhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2NDgwMjIsImV4cCI6MjA5NTIyNDAyMn0.hFSF8L73jWdmUmPT1BVopQ_6ZJD6xwYXKIT95HPZ4LM";
 const HEADERS = { "Content-Type": "application/json", "apikey": SUPA_KEY, "Authorization": `Bearer ${SUPA_KEY}` };
 const API = `${SUPA_URL}/rest/v1/reservas`;
+const SYNC_FN = `${SUPA_URL}/functions/v1/sync-ical`;
+
+const ICAL_STORAGE_KEY = "nativo_ical_urls";
+function loadIcalUrls() {
+  try { return JSON.parse(localStorage.getItem(ICAL_STORAGE_KEY) || "{}"); }
+  catch { return {}; }
+}
+function saveIcalUrls(urls) {
+  localStorage.setItem(ICAL_STORAGE_KEY, JSON.stringify(urls));
+}
 
 async function dbGetAll() {
   const r = await fetch(`${API}?order=check_in.asc`, { headers: HEADERS });
@@ -47,10 +57,10 @@ function parseDate(s){const[y,m,d]=s.split("-").map(Number);return new Date(y,m-
 function fmtShort(d){return d.toLocaleDateString("es-CL",{day:"numeric",month:"short"});}
 function daysInMonth(y,m){return new Date(y,m+1,0).getDate();}
 function firstDayOfMonth(y,m){const d=new Date(y,m,1).getDay();return d===0?6:d-1;}
-function statusKey(r){return r.tipo==="airbnb"?"airbnb":(r.estado||"pendiente");}
+function statusKey(r){return r.type==="airbnb"?"airbnb":(r.status||"pendiente");}
 function resColor(r){return STATUS_CONFIG[statusKey(r)]?.color||"#888";}
 function occupies(res,day){
-  const s=parseDate(res.check_in),e=parseDate(res.check_out);
+  const s=parseDate(res.checkIn),e=parseDate(res.checkOut);
   const d=new Date(day);d.setHours(12,0,0,0);
   return s<=d&&d<e;
 }
@@ -75,6 +85,7 @@ function buildSegments(reservations,visibleDays,CW,CH,GAP){
     const color=resColor(res);
     let fi=-1,li=-1;
     visibleDays.forEach((day,i)=>{
+      if(!day) return;
       const involved=occupies(res,day)||isSameDay(end,day);
       if(involved){if(fi===-1)fi=i;li=i;}
     });
@@ -113,6 +124,10 @@ export default function App() {
   const [form,setForm]           = useState(emptyForm());
   const [editId,setEditId]       = useState(null);
   const [detail,setDetail]       = useState(null);
+  const [syncModal,setSyncModal] = useState(false);
+  const [icalUrls,setIcalUrls]   = useState(loadIcalUrls);
+  const [syncing,setSyncing]     = useState(false);
+  const [syncResult,setSyncResult] = useState(null);
 
   // Load from Supabase on mount
   useEffect(()=>{
@@ -155,6 +170,29 @@ export default function App() {
     await dbDelete(id);
     setReservations(r=>r.filter(x=>x.id!==id));
     setDetail(null);
+  }
+
+  async function syncAirbnb(){
+    const configs = PROPERTIES
+      .map(p=>({ propertyId: p.id, url: icalUrls[p.id]||"" }))
+      .filter(c=>c.url.trim());
+    if(!configs.length){ setSyncResult({error:"Ingresa al menos un link iCal"}); return; }
+    setSyncing(true); setSyncResult(null);
+    try {
+      const res = await fetch(SYNC_FN, {
+        method:"POST",
+        headers:{ "Content-Type":"application/json", "apikey": SUPA_KEY, "Authorization":`Bearer ${SUPA_KEY}` },
+        body: JSON.stringify({ configs })
+      });
+      const data = await res.json();
+      if(data.error) { setSyncResult({error: data.error}); return; }
+      setSyncResult({ synced: data.synced, errors: data.errors||[] });
+      // Reload reservations
+      const rows = await dbGetAll();
+      if(Array.isArray(rows)) setReservations(rows.map(fromDB));
+    } catch(e) {
+      setSyncResult({ error: e.message });
+    } finally { setSyncing(false); }
   }
 
   const prop=PROPERTIES.find(p=>p.id===modal?.propertyId);
@@ -253,22 +291,17 @@ export default function App() {
           ))}
         </div>
         {weeks.map((week,wi)=>{
-          const segs=buildSegments(propRes,week.filter(Boolean),MCW,MCH,MGAP);
+          const segs=buildSegments(propRes,week,MCW,MCH,MGAP);
           return(
             <svg key={wi} width={mTotalW} height={MCH} style={{display:"block",marginBottom:MGAP}}>
               {week.map((day,i)=>{
                 if(!day)return null;
                 const isPast=day<today;
                 const occ=propRes.some(r=>occupies(r,day));
-                const isToday=isSameDay(day,today);
                 return(
                   <g key={i} onClick={()=>!occ&&openAdd(monthProp,day)} style={{cursor:occ?"default":"pointer"}}>
                     <rect x={mColX(i)} y={0} width={MCW} height={MCH} rx={3}
                       fill={isPast&&!occ?"#EDEBE8":"#fff"} stroke={isPast?"#E2DFD9":"#E8E5DF"} strokeWidth={1}/>
-                    <rect x={mColX(i)+MCW/2-9} y={1} width={18} height={18} rx={9} fill={isToday?"#E8553E":"transparent"}/>
-                    <text x={mColX(i)+MCW/2} y={11} textAnchor="middle" dominantBaseline="middle"
-                      fill={isToday?"#fff":isPast?"#CCC":"#444"} fontSize={10} fontWeight={isToday?"700":"400"}
-                      style={{pointerEvents:"none"}}>{day.getDate()}</text>
                   </g>
                 );
               })}
@@ -281,6 +314,20 @@ export default function App() {
                   </text>
                 </g>
               ))}
+              {week.map((day,i)=>{
+                if(!day)return null;
+                const isToday=isSameDay(day,today);
+                const isPast=day<today;
+                const occ=propRes.some(r=>occupies(r,day));
+                return(
+                  <g key={`lbl-${i}`} style={{pointerEvents:"none"}}>
+                    <rect x={mColX(i)+MCW/2-9} y={1} width={18} height={18} rx={9} fill={isToday?"#E8553E":"transparent"}/>
+                    <text x={mColX(i)+MCW/2} y={11} textAnchor="middle" dominantBaseline="middle"
+                      fill={isToday?"#fff":occ?"#fff":isPast?"#CCC":"#444"} fontSize={10} fontWeight={isToday||occ?"700":"400"}
+                      style={{pointerEvents:"none"}}>{day.getDate()}</text>
+                  </g>
+                );
+              })}
             </svg>
           );
         })}
@@ -305,12 +352,19 @@ export default function App() {
 
       <div style={{background:"#1A1A1A",padding:"18px 16px 14px",position:"sticky",top:0,zIndex:50}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
-          <div>
-            <div style={{color:"#606060",fontSize:10,letterSpacing:2,textTransform:"uppercase"}}>Arriendos</div>
-            <div style={{color:"#FFF",fontSize:18,fontWeight:700,marginTop:1}}>Nativo</div>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <img src="/logo.jpg" alt="Nativo" style={{width:40,height:40,borderRadius:8,objectFit:"cover"}}/>
+            <div>
+              <div style={{color:"#606060",fontSize:10,letterSpacing:2,textTransform:"uppercase"}}>Arriendos</div>
+              <div style={{color:"#FFF",fontSize:18,fontWeight:700,marginTop:1}}>Nativo</div>
+            </div>
           </div>
-          <button onClick={()=>{setWeekStart(getMonday(new Date()));setView("week");}}
-            style={{background:"#E8553E",color:"#fff",border:"none",borderRadius:8,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer"}}>Hoy</button>
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={()=>setSyncModal(true)}
+              style={{background:"#2A2A2A",color:"#fff",border:"none",borderRadius:8,padding:"6px 12px",fontSize:12,fontWeight:700,cursor:"pointer"}}>⟳ Airbnb</button>
+            <button onClick={()=>{setWeekStart(getMonday(new Date()));setView("week");}}
+              style={{background:"#E8553E",color:"#fff",border:"none",borderRadius:8,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer"}}>Hoy</button>
+          </div>
         </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
           {["week","month"].map(v=>(
@@ -414,6 +468,50 @@ export default function App() {
               style={{width:"100%",padding:"14px 0",borderRadius:12,background:form.guest&&form.checkIn&&form.checkOut?STATUS_CONFIG[form.type==="airbnb"?"airbnb":form.status]?.color:"#CCC",color:"#fff",border:"none",fontSize:15,fontWeight:700,cursor:"pointer",opacity:saving?0.7:1}}>
               {saving?"Guardando…":editId?"Guardar cambios":"Agregar reserva"}
             </button>
+          </div>
+        </div>
+      )}
+
+      {syncModal&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.65)",zIndex:100,display:"flex",alignItems:"flex-end"}}>
+          <div style={{background:"#fff",borderRadius:"20px 20px 0 0",width:"100%",padding:24,maxHeight:"90vh",overflowY:"auto"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:18}}>
+              <h2 style={{fontSize:18,fontWeight:700,margin:0}}>Sincronizar Airbnb</h2>
+              <button onClick={()=>{setSyncModal(false);setSyncResult(null);}} style={{background:"none",border:"none",fontSize:26,cursor:"pointer",color:"#AAA"}}>×</button>
+            </div>
+            <p style={{fontSize:12,color:"#888",marginBottom:18,lineHeight:1.6}}>
+              Pega los links iCal de cada propiedad desde Airbnb → Gestionar anuncio → Calendario → Disponibilidad → Exportar calendario.
+            </p>
+            {PROPERTIES.map(p=>(
+              <div key={p.id} style={{marginBottom:16}}>
+                <label style={lbl}>{p.name}</label>
+                <input style={inp} placeholder="https://www.airbnb.com/calendar/ical/…"
+                  value={icalUrls[p.id]||""}
+                  onChange={e=>{
+                    const v=e.target.value;
+                    setIcalUrls(prev=>{const n={...prev,[p.id]:v};saveIcalUrls(n);return n;});
+                  }}/>
+              </div>
+            ))}
+            {syncResult&&(
+              <div style={{borderRadius:10,padding:"12px 14px",marginBottom:14,background:syncResult.error?"#FFEDED":"#F0FFF5",border:`1.5px solid ${syncResult.error?"#E8553E":"#2A9D5C"}`}}>
+                {syncResult.error?(
+                  <span style={{fontSize:13,color:"#E8553E",fontWeight:600}}>{syncResult.error}</span>
+                ):(
+                  <>
+                    <div style={{fontSize:13,fontWeight:700,color:"#2A9D5C"}}>{syncResult.synced} reserva{syncResult.synced!==1?"s":""} sincronizada{syncResult.synced!==1?"s":""}</div>
+                    {syncResult.errors.length>0&&(
+                      <div style={{fontSize:11,color:"#E8553E",marginTop:6}}>{syncResult.errors.join(" · ")}</div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+            <button onClick={syncAirbnb} disabled={syncing}
+              style={{width:"100%",padding:"14px 0",borderRadius:12,background:syncing?"#CCC":"#E8553E",color:"#fff",border:"none",fontSize:15,fontWeight:700,cursor:syncing?"default":"pointer",opacity:syncing?0.7:1}}>
+              {syncing?"Sincronizando…":"⟳ Sincronizar ahora"}
+            </button>
+            <p style={{fontSize:10,color:"#CCC",textAlign:"center",marginTop:10,marginBottom:0}}>Los links se guardan en este dispositivo.</p>
           </div>
         </div>
       )}
