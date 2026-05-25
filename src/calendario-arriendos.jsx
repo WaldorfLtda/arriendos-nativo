@@ -240,12 +240,12 @@ export default function App() {
                     </g>
                   );
                 })}
-                {segments.map(({res,ptsStr,nameX,nameY,color})=>(
+                {segments.map(({res,ptsStr,nameX,nameY,color,nameW})=>(
                   <g key={res.id} onClick={e=>{e.stopPropagation();setDetail(res);}} style={{cursor:"pointer"}}>
                     <polygon points={ptsStr} fill={color}/>
                     <text x={nameX} y={nameY} textAnchor="middle" dominantBaseline="middle"
                       fill="#fff" fontSize={8} fontWeight="700" style={{pointerEvents:"none",userSelect:"none"}}>
-                      {(()=>{const iconW=res.pets?9:0;const max=Math.max(3,Math.floor((nameW-iconW)/5.5));const label=res.guest.length>max?res.guest.slice(0,max-1)+"…":res.guest;return res.pets?label+" 🐾":label;})()}
+                      {(()=>{const g=res.guest||"";const iconW=res.pets?9:0;const max=Math.max(3,Math.floor((nameW-iconW)/5.5));const label=g.length>max?g.slice(0,max-1)+"…":g;return res.pets?label+" 🐾":label;})()}
                     </text>
                   </g>
                 ))}
@@ -307,7 +307,7 @@ export default function App() {
                   </g>
                 );
               })}
-              {segs.map(({res,ptsStr,nameX,nameY})=>{
+              {segs.map(({res,ptsStr,nameX,nameY,nameW})=>{
                 const resPast=res.checkOut<=dateKey(today);
                 const segColor=resPast?"#CCCCCC":resColor(res);
                 return(
@@ -315,7 +315,7 @@ export default function App() {
                     <polygon points={ptsStr} fill={segColor}/>
                     <text x={nameX} y={nameY} textAnchor="middle" dominantBaseline="middle"
                       fill="#fff" fontSize={8} fontWeight="700" style={{pointerEvents:"none",userSelect:"none"}}>
-                      {(()=>{const iconW=res.pets?9:0;const max=Math.max(3,Math.floor((nameW-iconW)/5.5));const label=res.guest.length>max?res.guest.slice(0,max-1)+"…":res.guest;return res.pets?label+" 🐾":label;})()}
+                      {(()=>{const g=res.guest||"";const iconW=res.pets?9:0;const max=Math.max(3,Math.floor((nameW-iconW)/5.5));const label=g.length>max?g.slice(0,max-1)+"…":g;return res.pets?label+" 🐾":label;})()}
                     </text>
                   </g>
                 );
