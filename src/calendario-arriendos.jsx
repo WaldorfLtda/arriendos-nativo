@@ -352,6 +352,47 @@ export default function App() {
     );
   }
 
+  function HistoryView(){
+    const [histProp,setHistProp]=useState("all");
+    const past=reservations
+      .filter(r=>r.checkOut<=dateKey(today))
+      .filter(r=>histProp==="all"||r.propertyId===histProp)
+      .sort((a,b)=>b.checkOut.localeCompare(a.checkOut));
+    return(
+      <div style={{padding:"0 8px"}}>
+        <div style={{display:"flex",gap:6,marginBottom:10}}>
+          {[{id:"all",name:"Todas"},...PROPERTIES].map(p=>(
+            <button key={p.id} onClick={()=>setHistProp(p.id)}
+              style={{flex:1,padding:"9px 0",borderRadius:10,border:`2px solid ${histProp===p.id?"#E8553E":"#E5E2DE"}`,background:histProp===p.id?"#FDF0ED":"#fff",color:histProp===p.id?"#E8553E":"#AAA",fontWeight:700,fontSize:11,cursor:"pointer"}}>
+              {p.name}
+            </button>
+          ))}
+        </div>
+        {past.length===0?(
+          <div style={{textAlign:"center",color:"#AAA",fontSize:13,marginTop:40}}>Sin reservas pasadas</div>
+        ):(
+          past.map(r=>{
+            const prop=PROPERTIES.find(p=>p.id===r.propertyId);
+            const color=resColor(r);
+            return(
+              <div key={r.id} onClick={()=>setDetail(r)} style={{background:"#fff",borderRadius:12,padding:"12px 14px",marginBottom:8,display:"flex",alignItems:"center",gap:12,cursor:"pointer"}}>
+                <div style={{width:4,alignSelf:"stretch",borderRadius:4,background:color,flexShrink:0}}/>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontWeight:700,fontSize:13,color:"#333",marginBottom:2}}>{r.guest}</div>
+                  <div style={{fontSize:11,color:"#888"}}>{fmtShort(parseDate(r.checkIn))} → {fmtShort(parseDate(r.checkOut))}</div>
+                  <div style={{fontSize:11,color:"#AAA",marginTop:2}}>{prop?.name}{r.guests?` · ${r.guests} huéspedes`:""}</div>
+                </div>
+                <div style={{fontSize:10,fontWeight:700,color:"#fff",background:color,borderRadius:6,padding:"3px 8px",flexShrink:0}}>
+                  {STATUS_CONFIG[r.status||"pendiente"]?.label||r.status}
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+    );
+  }
+
   return(
     <div style={{fontFamily:"'DM Sans',sans-serif",background:"#F2F0ED",minHeight:"100vh",maxWidth:480,margin:"0 auto",paddingBottom:50}}>
       <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
@@ -372,11 +413,11 @@ export default function App() {
               style={{background:"#E8553E",color:"#fff",border:"none",borderRadius:8,padding:"6px 14px",fontSize:12,fontWeight:700,cursor:"pointer"}}>Hoy</button>
           </div>
         </div>
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
-          {["week","month"].map(v=>(
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:6}}>
+          {["week","month","history"].map(v=>(
             <button key={v} onClick={()=>setView(v)}
               style={{padding:"8px 0",borderRadius:8,border:"none",background:view===v?"#E8553E":"#2A2A2A",color:view===v?"#fff":"#606060",fontWeight:700,fontSize:12,cursor:"pointer"}}>
-              {v==="week"?"📅 Semana":"🗓 Mes"}
+              {v==="week"?"📅 Semana":v==="month"?"🗓 Mes":"📋 Historial"}
             </button>
           ))}
         </div>
@@ -387,7 +428,7 @@ export default function App() {
           Cargando reservas…
         </div>
       ):(
-        <div style={{padding:"12px 0"}}>{view==="week"?<WeekView/>:<MonthView/>}</div>
+        <div style={{padding:"12px 0"}}>{view==="week"?<WeekView/>:view==="month"?<MonthView/>:<HistoryView/>}</div>
       )}
 
       {view==="week"&&!loading&&(
