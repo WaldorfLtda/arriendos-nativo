@@ -103,7 +103,8 @@ function buildSegments(reservations,visibleDays,CW,CH,GAP){
     const middleRight=isCO?rx:rx+CW;
     const nameX=(middleLeft+middleRight)/2;
     const nameY=(y1+y2)/2;
-    result.push({res,ptsStr,nameX,nameY,color});
+    const nameW=middleRight-middleLeft;
+    result.push({res,ptsStr,nameX,nameY,color,nameW});
   });
   return result;
 }
@@ -244,7 +245,7 @@ export default function App() {
                     <polygon points={ptsStr} fill={color}/>
                     <text x={nameX} y={nameY} textAnchor="middle" dominantBaseline="middle"
                       fill="#fff" fontSize={8} fontWeight="700" style={{pointerEvents:"none",userSelect:"none"}}>
-                      {res.guest.length>9?res.guest.slice(0,8)+"…":res.guest}
+                      {(()=>{const max=Math.max(3,Math.floor(nameW/5.5));return res.guest.length>max?res.guest.slice(0,max-1)+"…":res.guest;})()}
                     </text>
                   </g>
                 ))}
@@ -314,7 +315,7 @@ export default function App() {
                     <polygon points={ptsStr} fill={segColor}/>
                     <text x={nameX} y={nameY} textAnchor="middle" dominantBaseline="middle"
                       fill="#fff" fontSize={8} fontWeight="700" style={{pointerEvents:"none",userSelect:"none"}}>
-                      {res.guest.length>9?res.guest.slice(0,8)+"…":res.guest}
+                      {(()=>{const max=Math.max(3,Math.floor(nameW/5.5));return res.guest.length>max?res.guest.slice(0,max-1)+"…":res.guest;})()}
                     </text>
                   </g>
                 );
