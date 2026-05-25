@@ -173,7 +173,7 @@ export default function App() {
             const isToday=isSameDay(d,today);
             return(
               <div key={i} style={{width:CW,flexShrink:0,textAlign:"center"}}>
-                <div style={{fontSize:8,color:"#999",textTransform:"uppercase",fontFamily:"monospace"}}>{["DOM","LUN","MAR","MIÉ","JUE","VIE","SÁB"][d.getDay()]}</div>
+                <div style={{fontSize:8,color:"#999",textTransform:"uppercase",fontFamily:"monospace"}}>{d.toLocaleDateString("es-CL",{weekday:"short"}).toUpperCase().slice(0,3)}</div>
                 <div style={{width:20,height:20,borderRadius:"50%",margin:"2px auto 0",background:isToday?"#E8553E":"transparent",color:isToday?"#fff":"#999",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:isToday?700:400}}>{d.getDate()}</div>
               </div>
             );
