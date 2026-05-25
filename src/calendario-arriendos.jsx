@@ -245,7 +245,7 @@ export default function App() {
                     <polygon points={ptsStr} fill={color}/>
                     <text x={nameX} y={nameY} textAnchor="middle" dominantBaseline="middle"
                       fill="#fff" fontSize={8} fontWeight="700" style={{pointerEvents:"none",userSelect:"none"}}>
-                      {(()=>{const max=Math.max(3,Math.floor(nameW/5.5));return res.guest.length>max?res.guest.slice(0,max-1)+"…":res.guest;})()}
+                      {(()=>{const iconW=res.pets?9:0;const max=Math.max(3,Math.floor((nameW-iconW)/5.5));const label=res.guest.length>max?res.guest.slice(0,max-1)+"…":res.guest;return res.pets?label+" 🐾":label;})()}
                     </text>
                   </g>
                 ))}
@@ -315,7 +315,7 @@ export default function App() {
                     <polygon points={ptsStr} fill={segColor}/>
                     <text x={nameX} y={nameY} textAnchor="middle" dominantBaseline="middle"
                       fill="#fff" fontSize={8} fontWeight="700" style={{pointerEvents:"none",userSelect:"none"}}>
-                      {(()=>{const max=Math.max(3,Math.floor(nameW/5.5));return res.guest.length>max?res.guest.slice(0,max-1)+"…":res.guest;})()}
+                      {(()=>{const iconW=res.pets?9:0;const max=Math.max(3,Math.floor((nameW-iconW)/5.5));const label=res.guest.length>max?res.guest.slice(0,max-1)+"…":res.guest;return res.pets?label+" 🐾":label;})()}
                     </text>
                   </g>
                 );
