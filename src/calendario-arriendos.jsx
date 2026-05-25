@@ -305,25 +305,30 @@ export default function App() {
                   </g>
                 );
               })}
-              {segs.map(({res,ptsStr,color,nameX,nameY})=>(
-                <g key={res.id} onClick={e=>{e.stopPropagation();setDetail(res);}} style={{cursor:"pointer"}}>
-                  <polygon points={ptsStr} fill={color}/>
-                  <text x={nameX} y={nameY} textAnchor="middle" dominantBaseline="middle"
-                    fill="#fff" fontSize={8} fontWeight="700" style={{pointerEvents:"none",userSelect:"none"}}>
-                    {res.guest.length>9?res.guest.slice(0,8)+"…":res.guest}
-                  </text>
-                </g>
-              ))}
+              {segs.map(({res,ptsStr,nameX,nameY})=>{
+                const resPast=res.checkOut<=dateKey(today);
+                const segColor=resPast?"#CCCCCC":resColor(res);
+                return(
+                  <g key={res.id} onClick={e=>{e.stopPropagation();setDetail(res);}} style={{cursor:"pointer"}}>
+                    <polygon points={ptsStr} fill={segColor}/>
+                    <text x={nameX} y={nameY} textAnchor="middle" dominantBaseline="middle"
+                      fill="#fff" fontSize={8} fontWeight="700" style={{pointerEvents:"none",userSelect:"none"}}>
+                      {res.guest.length>9?res.guest.slice(0,8)+"…":res.guest}
+                    </text>
+                  </g>
+                );
+              })}
               {week.map((day,i)=>{
                 if(!day)return null;
                 const isToday=isSameDay(day,today);
                 const isPast=day<today;
-                const occ=propRes.some(r=>occupies(r,day));
+                const dk=dateKey(day);
+                const occFull=propRes.some(r=>r.checkIn<dk&&dk<r.checkOut);
                 return(
                   <g key={`lbl-${i}`} style={{pointerEvents:"none"}}>
                     <rect x={mColX(i)+MCW/2-9} y={1} width={18} height={18} rx={9} fill={isToday?"#E8553E":"transparent"}/>
                     <text x={mColX(i)+MCW/2} y={11} textAnchor="middle" dominantBaseline="middle"
-                      fill={isToday?"#fff":occ?"#fff":isPast?"#CCC":"#444"} fontSize={10} fontWeight={isToday||occ?"700":"400"}
+                      fill={isToday?"#fff":occFull?"#fff":isPast?"#CCC":"#444"} fontSize={10} fontWeight={isToday||occFull?"700":"400"}
                       style={{pointerEvents:"none"}}>{day.getDate()}</text>
                   </g>
                 );
