@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 
 // ── Supabase config ──────────────────────────────────────────
-const SUPA_URL = import.meta.env.VITE_SUPA_URL || "https://dsczjxscglezsdmcbuho.supabase.co";
-const SUPA_KEY = import.meta.env.VITE_SUPA_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRzY3pqeHNjZ2xlenNkbWNidWhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2NDgwMjIsImV4cCI6MjA5NTIyNDAyMn0.hFSF8L73jWdmUmPT1BVopQ_6ZJD6xwYXKIT95HPZ4LM";
+const SUPA_URL = "https://dscзjxscglezsdmcbuho.supabase.co";
+const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRzY3pqeHNjZ2xlenNkbWNidWhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk2NDgwMjIsImV4cCI6MjA5NTIyNDAyMn0.hFSF8L73jWdmUmPT1BVopQ_6ZJD6xwYXKIT95HPZ4LM";
 const HEADERS = { "Content-Type": "application/json", "apikey": SUPA_KEY, "Authorization": `Bearer ${SUPA_KEY}` };
 const API = `${SUPA_URL}/rest/v1/reservas`;
 
@@ -47,10 +47,10 @@ function parseDate(s){const[y,m,d]=s.split("-").map(Number);return new Date(y,m-
 function fmtShort(d){return d.toLocaleDateString("es-CL",{day:"numeric",month:"short"});}
 function daysInMonth(y,m){return new Date(y,m+1,0).getDate();}
 function firstDayOfMonth(y,m){const d=new Date(y,m,1).getDay();return d===0?6:d-1;}
-function statusKey(r){return r.type==="airbnb"?"airbnb":(r.status||"pendiente");}
+function statusKey(r){return r.tipo==="airbnb"?"airbnb":(r.estado||"pendiente");}
 function resColor(r){return STATUS_CONFIG[statusKey(r)]?.color||"#888";}
 function occupies(res,day){
-  const s=parseDate(res.checkIn),e=parseDate(res.checkOut);
+  const s=parseDate(res.check_in),e=parseDate(res.check_out);
   const d=new Date(day);d.setHours(12,0,0,0);
   return s<=d&&d<e;
 }
@@ -104,7 +104,7 @@ export default function App() {
 
   const [view,setView]           = useState("week");
   const [monthProp,setMonthProp] = useState("refugio");
-  const [weekStart,setWeekStart] = useState(() => {const d = new Date(); d.setHours(0,0,0,0); return d;});
+  const [weekStart,setWeekStart] = useState(new Date());
   const [monthRef,setMonthRef]   = useState({y:new Date().getFullYear(),m:new Date().getMonth()});
   const [reservations,setReservations] = useState([]);
   const [loading,setLoading]     = useState(true);
