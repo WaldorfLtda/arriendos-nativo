@@ -291,17 +291,18 @@ export default function App() {
           ))}
         </div>
         {weeks.map((week,wi)=>{
-          const segs=buildSegments(propRes,week,MCW,MCH,MGAP);
+          const activeRes=propRes.filter(r=>r.checkOut>dateKey(today));
+          const segs=buildSegments(activeRes,week,MCW,MCH,MGAP);
           return(
             <svg key={wi} width={mTotalW} height={MCH} style={{display:"block",marginBottom:MGAP}}>
               {week.map((day,i)=>{
                 if(!day)return null;
                 const isPast=day<today;
-                const occ=propRes.some(r=>occupies(r,day));
+                const occ=activeRes.some(r=>occupies(r,day));
                 return(
                   <g key={i} onClick={()=>!occ&&openAdd(monthProp,day)} style={{cursor:occ?"default":"pointer"}}>
                     <rect x={mColX(i)} y={0} width={MCW} height={MCH} rx={3}
-                      fill={isPast&&!occ?"#EDEBE8":"#fff"} stroke={isPast?"#E2DFD9":"#E8E5DF"} strokeWidth={1}/>
+                      fill={isPast?"#EDEBE8":"#fff"} stroke={isPast?"#E2DFD9":"#E8E5DF"} strokeWidth={1}/>
                   </g>
                 );
               })}
@@ -323,7 +324,7 @@ export default function App() {
                 const isToday=isSameDay(day,today);
                 const isPast=day<today;
                 const dk=dateKey(day);
-                const occFull=propRes.some(r=>r.checkIn<dk&&dk<r.checkOut);
+                const occFull=activeRes.some(r=>r.checkIn<dk&&dk<r.checkOut);
                 return(
                   <g key={`lbl-${i}`} style={{pointerEvents:"none"}}>
                     <rect x={mColX(i)+MCW/2-9} y={1} width={18} height={18} rx={9} fill={isToday?"#E8553E":"transparent"}/>
