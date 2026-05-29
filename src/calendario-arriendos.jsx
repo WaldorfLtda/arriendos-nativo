@@ -104,7 +104,10 @@ function buildSegments(reservations,visibleDays,CW,CH,GAP){
     const nameX=(middleLeft+middleRight)/2;
     const nameY=(y1+y2)/2;
     const nameW=middleRight-middleLeft;
-    result.push({res,ptsStr,nameX,nameY,color,nameW});
+    // Diagonal separator lines: checkin cuts top-right→bottom-left, checkout cuts top-right→bottom-left on its last col
+    const ciLine=isCI?{x1:lx+CW,y1_:y1,x2:lx,y2_:y2}:null;
+    const coLine=isCO?{x1:rx+CW,y1_:y1,x2:rx,y2_:y2}:null;
+    result.push({res,ptsStr,nameX,nameY,color,nameW,ciLine,coLine});
   });
   return result;
 }
@@ -251,9 +254,11 @@ export default function App() {
                     </g>
                   );
                 })}
-                {segments.map(({res,ptsStr,nameX,nameY,color,nameW})=>(
+                {segments.map(({res,ptsStr,nameX,nameY,color,nameW,ciLine,coLine})=>(
                   <g key={res.id} onClick={e=>{e.stopPropagation();setDetail(res);}} style={{cursor:"pointer"}}>
-                    <polygon points={ptsStr} fill={color} stroke="#fff" strokeWidth={2}/>
+                    <polygon points={ptsStr} fill={color}/>
+                    {ciLine&&<line x1={ciLine.x1} y1={ciLine.y1_} x2={ciLine.x2} y2={ciLine.y2_} stroke="#fff" strokeWidth={3} strokeLinecap="round"/>}
+                    {coLine&&<line x1={coLine.x1} y1={coLine.y1_} x2={coLine.x2} y2={coLine.y2_} stroke="#fff" strokeWidth={3} strokeLinecap="round"/>}
                     <text x={nameX} y={nameY} textAnchor="middle" dominantBaseline="middle"
                       fill="#fff" fontSize={8} fontWeight="700" style={{pointerEvents:"none",userSelect:"none"}}>
                       {(()=>{const g=res.guest||"";const iconW=res.pets?9:0;const max=Math.max(3,Math.floor((nameW-iconW)/5.5));const label=g.length>max?g.slice(0,max-1)+"…":g;return res.pets?label+" 🐾":label;})()}
@@ -317,12 +322,14 @@ export default function App() {
                   </g>
                 );
               })}
-              {segs.map(({res,ptsStr,nameX,nameY,nameW})=>{
+              {segs.map(({res,ptsStr,nameX,nameY,nameW,ciLine,coLine})=>{
                 const resPast=res.checkOut<=dateKey(today);
                 const segColor=resPast?"#CCCCCC":resColor(res);
                 return(
                   <g key={res.id} onClick={e=>{e.stopPropagation();setDetail(res);}} style={{cursor:"pointer"}}>
-                    <polygon points={ptsStr} fill={segColor} stroke="#fff" strokeWidth={2}/>
+                    <polygon points={ptsStr} fill={segColor}/>
+                    {ciLine&&<line x1={ciLine.x1} y1={ciLine.y1_} x2={ciLine.x2} y2={ciLine.y2_} stroke="#fff" strokeWidth={3} strokeLinecap="round"/>}
+                    {coLine&&<line x1={coLine.x1} y1={coLine.y1_} x2={coLine.x2} y2={coLine.y2_} stroke="#fff" strokeWidth={3} strokeLinecap="round"/>}
                     <text x={nameX} y={nameY} textAnchor="middle" dominantBaseline="middle"
                       fill="#fff" fontSize={8} fontWeight="700" style={{pointerEvents:"none",userSelect:"none"}}>
                       {(()=>{const g=res.guest||"";const iconW=res.pets?9:0;const max=Math.max(3,Math.floor((nameW-iconW)/5.5));const label=g.length>max?g.slice(0,max-1)+"…":g;return res.pets?label+" 🐾":label;})()}
