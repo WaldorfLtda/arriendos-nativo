@@ -138,6 +138,17 @@ export default function App() {
     }).catch(()=>setLoading(false));
   },[]);
 
+  // Reload when app comes back to foreground (mobile PWA)
+  useEffect(()=>{
+    function onVisible(){
+      if(document.visibilityState==="visible"){
+        dbGetAll().then(rows=>{ if(Array.isArray(rows)) setReservations(rows.map(fromDB)); });
+      }
+    }
+    document.addEventListener("visibilitychange", onVisible);
+    return ()=>document.removeEventListener("visibilitychange", onVisible);
+  },[]);
+
   const today=new Date();today.setHours(0,0,0,0);
   const weekDays=Array.from({length:7},(_,i)=>addDays(weekStart,i));
   const colX=i=>i*(CW+GAP);
@@ -242,7 +253,7 @@ export default function App() {
                 })}
                 {segments.map(({res,ptsStr,nameX,nameY,color,nameW})=>(
                   <g key={res.id} onClick={e=>{e.stopPropagation();setDetail(res);}} style={{cursor:"pointer"}}>
-                    <polygon points={ptsStr} fill={color}/>
+                    <polygon points={ptsStr} fill={color} stroke="#fff" strokeWidth={2}/>
                     <text x={nameX} y={nameY} textAnchor="middle" dominantBaseline="middle"
                       fill="#fff" fontSize={8} fontWeight="700" style={{pointerEvents:"none",userSelect:"none"}}>
                       {(()=>{const g=res.guest||"";const iconW=res.pets?9:0;const max=Math.max(3,Math.floor((nameW-iconW)/5.5));const label=g.length>max?g.slice(0,max-1)+"…":g;return res.pets?label+" 🐾":label;})()}
@@ -292,14 +303,13 @@ export default function App() {
           ))}
         </div>
         {weeks.map((week,wi)=>{
-          const activeRes=propRes.filter(r=>r.checkOut>dateKey(today));
-          const segs=buildSegments(activeRes,week,MCW,MCH,MGAP);
+          const segs=buildSegments(propRes,week,MCW,MCH,MGAP);
           return(
             <svg key={wi} width={mTotalW} height={MCH} style={{display:"block",marginBottom:MGAP}}>
               {week.map((day,i)=>{
                 if(!day)return null;
                 const isPast=day<today;
-                const occ=activeRes.some(r=>occupies(r,day));
+                const occ=propRes.some(r=>occupies(r,day));
                 return(
                   <g key={i} onClick={()=>!occ&&openAdd(monthProp,day)} style={{cursor:occ?"default":"pointer"}}>
                     <rect x={mColX(i)} y={0} width={MCW} height={MCH} rx={3}
@@ -312,7 +322,7 @@ export default function App() {
                 const segColor=resPast?"#CCCCCC":resColor(res);
                 return(
                   <g key={res.id} onClick={e=>{e.stopPropagation();setDetail(res);}} style={{cursor:"pointer"}}>
-                    <polygon points={ptsStr} fill={segColor}/>
+                    <polygon points={ptsStr} fill={segColor} stroke="#fff" strokeWidth={2}/>
                     <text x={nameX} y={nameY} textAnchor="middle" dominantBaseline="middle"
                       fill="#fff" fontSize={8} fontWeight="700" style={{pointerEvents:"none",userSelect:"none"}}>
                       {(()=>{const g=res.guest||"";const iconW=res.pets?9:0;const max=Math.max(3,Math.floor((nameW-iconW)/5.5));const label=g.length>max?g.slice(0,max-1)+"…":g;return res.pets?label+" 🐾":label;})()}
@@ -325,7 +335,7 @@ export default function App() {
                 const isToday=isSameDay(day,today);
                 const isPast=day<today;
                 const dk=dateKey(day);
-                const occFull=activeRes.some(r=>r.checkIn<dk&&dk<r.checkOut);
+                const occFull=propRes.some(r=>r.checkIn<dk&&dk<r.checkOut);
                 return(
                   <g key={`lbl-${i}`} style={{pointerEvents:"none"}}>
                     <rect x={mColX(i)+MCW/2-9} y={1} width={18} height={18} rx={9} fill={isToday?"#E8553E":"transparent"}/>
