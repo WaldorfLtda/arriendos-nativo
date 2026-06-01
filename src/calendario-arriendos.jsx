@@ -245,7 +245,7 @@ export default function App() {
                   return(
                     <g key={i} onClick={()=>!occ&&openAdd(pr.id,day)} style={{cursor:occ?"default":"pointer"}}>
                       <rect x={colX(i)} y={0} width={CW} height={CH} rx={4}
-                        fill={isPast&&!occ?"#EDEBE8":"#fff"}
+                        fill={isPast?"#EDEBE8":"#fff"}
                         stroke={isPast?"#E2DFD9":"#E8E5DF"} strokeWidth={1.5}/>
                       {!occ&&!isPast&&(
                         <text x={colX(i)+CW/2} y={CH/2+1} textAnchor="middle" dominantBaseline="middle"
@@ -254,17 +254,21 @@ export default function App() {
                     </g>
                   );
                 })}
-                {segments.map(({res,ptsStr,nameX,nameY,color,nameW,ciLine,coLine})=>(
-                  <g key={res.id} onClick={e=>{e.stopPropagation();setDetail(res);}} style={{cursor:"pointer"}}>
-                    <polygon points={ptsStr} fill={color}/>
-                    {ciLine&&<line x1={ciLine.x1} y1={ciLine.y1_} x2={ciLine.x2} y2={ciLine.y2_} stroke="#fff" strokeWidth={3} strokeLinecap="round"/>}
-                    {coLine&&<line x1={coLine.x1} y1={coLine.y1_} x2={coLine.x2} y2={coLine.y2_} stroke="#fff" strokeWidth={3} strokeLinecap="round"/>}
-                    <text x={nameX} y={nameY} textAnchor="middle" dominantBaseline="middle"
-                      fill="#fff" fontSize={8} fontWeight="700" style={{pointerEvents:"none",userSelect:"none"}}>
-                      {(()=>{const g=res.guest||"";const iconW=res.pets?9:0;const max=Math.max(3,Math.floor((nameW-iconW)/5.5));const label=g.length>max?g.slice(0,max-1)+"…":g;return res.pets?label+" 🐾":label;})()}
-                    </text>
-                  </g>
-                ))}
+                {segments.map(({res,ptsStr,nameX,nameY,color,nameW,ciLine,coLine})=>{
+                  const resPast=res.checkOut<=dateKey(today);
+                  const segColor=resPast?"#CCCCCC":color;
+                  return(
+                    <g key={res.id} onClick={e=>{e.stopPropagation();setDetail(res);}} style={{cursor:"pointer"}}>
+                      <polygon points={ptsStr} fill={segColor}/>
+                      {ciLine&&<line x1={ciLine.x1} y1={ciLine.y1_} x2={ciLine.x2} y2={ciLine.y2_} stroke="#fff" strokeWidth={3} strokeLinecap="round"/>}
+                      {coLine&&<line x1={coLine.x1} y1={coLine.y1_} x2={coLine.x2} y2={coLine.y2_} stroke="#fff" strokeWidth={3} strokeLinecap="round"/>}
+                      <text x={nameX} y={nameY} textAnchor="middle" dominantBaseline="middle"
+                        fill="#fff" fontSize={8} fontWeight="700" style={{pointerEvents:"none",userSelect:"none"}}>
+                        {(()=>{const g=res.guest||"";const iconW=res.pets?9:0;const max=Math.max(3,Math.floor((nameW-iconW)/5.5));const label=g.length>max?g.slice(0,max-1)+"…":g;return res.pets?label+" 🐾":label;})()}
+                      </text>
+                    </g>
+                  );
+                })}
               </svg>
             </div>
           );
